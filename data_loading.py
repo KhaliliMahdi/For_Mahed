@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 
-def Data_Loading_Adult(gen=0):
+def Data_Loading_Adult(gen=0,seed=0):
     # data loading
     Data1 = pd.read_csv('data/adult.data', header=None, delimiter=",")
     Data2 = pd.read_csv('data/adult.test', header=None, delimiter=",")
@@ -38,7 +38,11 @@ def Data_Loading_Adult(gen=0):
 
     # Transform the type from string to float
     df.Age = df.Age.astype(float)
+    # df.fnlwgt = df.fnlwgt.astype(float)
+    #df.EducationNum = df.EducationNum.astype(float)
     df.HoursPerWeek = df.HoursPerWeek.astype(float)
+    #df.CapitalGain = df.CapitalGain.astype(float)
+    #df.CapitalLoss = df.CapitalLoss.astype(float)
 
     # One hot encoding for categorical features
     df = pd.get_dummies(df, columns=["WorkClass", "Education", "MaritalStatus", "Occupation", "Relationship",
@@ -53,11 +57,16 @@ def Data_Loading_Adult(gen=0):
         X[:, i] = X[:, i] / (np.max(X[:, i]) + 1e-8)
 
     # Divide the data into train, valid, and test set (1/3 each)
+    np.random.seed(seed = seed)
     idx = np.random.permutation(len(Y))
 
     # train
     trainX = X[idx[:(2 * int(len(Y) / 3))], :]
     trainY = Y[idx[:(2 * int(len(Y) / 3))]]
+
+    # valid
+    # validX = X[idx[int(len(Y) / 3):(2 * int(len(Y) / 3))], :]
+    # validY = Y[idx[int(len(Y) / 3):(2 * int(len(Y) / 3))]]
 
     # test
     testX = X[idx[(2 * int(len(Y) / 3)):], :]
@@ -70,7 +79,7 @@ def Data_Loading_Adult(gen=0):
         return np.concatenate((trainX, trainY.reshape(-1, 1)), axis=1)
 
 
-def Data_Loading_Law(seed,norm=False):
+def Data_Loading_Law(norm=False):
     # Only race as sensitive attribute, include gender as a feature
     df = pd.read_csv("data/law_data.csv", index_col=0)
     df = pd.get_dummies(df, columns=["race"], prefix="", prefix_sep="")
@@ -80,7 +89,7 @@ def Data_Loading_Law(seed,norm=False):
     df = df.drop(axis=1, columns=["sex"])
     df["LSAT"] = df["LSAT"].astype(int)
 
-    df_train, df_test = train_test_split(df, random_state=seed, test_size=0.2)
+    df_train, df_test = train_test_split(df, random_state=123, test_size=0.2)
     A = [
         "Amerindian",
         "Asian",
@@ -90,6 +99,8 @@ def Data_Loading_Law(seed,norm=False):
         "Other",
         "Puertorican",
         "White",
+        #"male",
+        #"female",
     ]
     X_train = np.hstack(
         (
@@ -126,15 +137,20 @@ def Data_Loading_Law(seed,norm=False):
         X_train[:, 8:10] = X_train[:, 8:10] / fac
         X_test[:, 8:10] = (X_test[:, 8:10] - X_mean)
         X_test[:, 8:10] = X_test[:, 8:10] / fac
+        # X_test = X_test / X_test.max(axis=0)
+        #y_train = (y_train + np.abs(min(y_train)))
+        #y_train = y_train / max(y_train)
+        #y_test = (y_test + np.abs(min(y_test)))
+        #y_test = y_test/max(y_test)
     return X_train, y_train, X_test, y_test, df_train, A, norm_fac
 
-def Data_Loading_GC(gen=0):
+def Data_Loading_GC(gen=0,seed=0):
     # data loading
     Data1 = pd.read_csv('data/Training_GC.csv', delimiter=",")
-    Data1 = Data1[['Creditability','Account.Balance','Duration.of.Credit..month.','Credit.Amount','Sex...Marital.Status']]
+    Data1 = Data1[['Sex...Marital.Status','Creditability','Account.Balance','Duration.of.Credit..month.','Credit.Amount']]
     Data1 = Data1.rename(columns={"Creditability": "label", "Sex...Marital.Status": "gender" })
     Data2 = pd.read_csv('data/Test_GC.csv', delimiter=",")
-    Data2 = Data2[['Creditability','Account.Balance','Duration.of.Credit..month.','Credit.Amount','Sex...Marital.Status']]
+    Data2 = Data2[['Sex...Marital.Status','Creditability','Account.Balance','Duration.of.Credit..month.','Credit.Amount']]
     Data2 = Data2.rename(columns={"Creditability": "label", "Sex...Marital.Status": "gender" })
     Data1 = Data1.loc[Data1['gender'] < 3]
     Data2 = Data2.loc[Data2['gender'] < 3]   
@@ -170,6 +186,7 @@ def Data_Loading_GC(gen=0):
         X[:, i] = X[:, i] / (np.max(X[:, i]) )
 
     # Divide the data into train, valid, and test set (1/3 each)
+    np.random.seed(seed = seed)
     idx = np.random.permutation(len(Y))
 
     # train
@@ -185,5 +202,4 @@ def Data_Loading_GC(gen=0):
         return trainX, trainY, testX, testY
     else:
         return np.concatenate((trainX, trainY.reshape(-1, 1)), axis=1)
-
 
