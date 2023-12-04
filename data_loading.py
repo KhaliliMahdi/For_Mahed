@@ -202,4 +202,91 @@ def Data_Loading_GC(gen=0,seed=0):
         return trainX, trainY, testX, testY
     else:
         return np.concatenate((trainX, trainY.reshape(-1, 1)), axis=1)
+def Data_Loading_FC(gen=0,seed=1):
+    # data loading
+    df = pd.read_csv('data/crx.data', delimiter=",")
+    df.columns = ["A1", "A2", "A3", "A4", "A5",
+                  "A6", "A7", "A8", "A9", "A10",
+                  "A11", "A12", "A13", "A14", "A15",  "label"]
+
+
+    # Index reset due to merging
+    df = df.reset_index()
+    df = df.drop("index", axis=1)
+
+    # Label define
+    # Set >50K as 1 and <=50K as 0
+    df.loc[df["A4"] == 'u','A4'] = 0
+    df.loc[df["A4"] == 'y','A4'] = 1
+    df.loc[df["A4"] == 'l','A4'] = 0
+    df.loc[df["A4"] == 't','A4'] = 0
+
+    df = df.drop(df[df["A1"]=='?'].index)
+    df = df.drop(df[df["A2"]=='?'].index)
+    df = df.drop(df[df["A3"]=='?'].index)
+    df = df.drop(df[df["A4"]=='?'].index)
+    df = df.drop(df[df["A5"]=='?'].index)
+    df = df.drop(df[df["A6"]=='?'].index)
+    df = df.drop(df[df["A7"]=='?'].index)
+    df = df.drop(df[df["A8"]=='?'].index)
+    df = df.drop(df[df["A9"]=='?'].index)
+    df = df.drop(df[df["A10"]=='?'].index)
+    df = df.drop(df[df["A11"]=='?'].index)
+    df = df.drop(df[df["A12"]=='?'].index)
+    df = df.drop(df[df["A13"]=='?'].index)
+    df = df.drop(df[df["A14"]=='?'].index)
+    df = df.drop(df[df["A15"]=='?'].index)
+    df = df.drop(df[df["label"]=='?'].index)
+    Y = np.ones([len(df), ])
+    Y[df["label"] == '-'] = 0
+    Y[df["label"] == '+'] = 1
+    l = sum((df["label"] == '+') & (df["A4"] == 1) )
+    np.random.seed(seed = seed)
+    Y[(df["label"] == '+') & (df["A4"] == 1) ] = np.random.choice(a=[0, 1], size=l, p=[0.5, 0.5])
+    # Drop feature which can directly infer label
+    df.drop("label", axis=1, inplace=True, )
+
+
+    # One hot encoding for categorical features
+    df = pd.get_dummies(df, columns=["A1", "A4", "A5",
+                  "A6", "A7", "A9", "A10",
+                   "A12", "A13"])
+    df['A2'] = df['A2'].astype(float)
+    df['A3'] = df['A3'].astype(float)
+    df['A8'] = df['A8'].astype(float)
+    df['A11'] = df['A11'].astype(float)
+    df['A14'] = df['A14'].astype(float)
+    df['A15'] = df['A15'].astype(float)
+
+
+    # Treat data as numpy array
+    X = np.asarray(df)
+
+    # Normalization with Minmax Scaler
+    for i in range(len(X[0, :])):
+        if i in [8,9]:
+            X[:, i] = X[:, i] - np.min(X[:, i])
+            X[:, i] = X[:, i] / (np.max(X[:, i]) )
+            continue
+        X[:, i] = X[:, i] - np.min(X[:, i])
+        X[:, i] = X[:, i] / (np.max(X[:, i])+1e-8 )
+
+    # Divide the data into train, valid, and test set (1/3 each)
+    
+    idx = np.random.permutation(len(Y))
+
+    # train
+    trainX = X[idx[:(2 * int(len(Y) / 3))], :]
+    trainY = Y[idx[:(2 * int(len(Y) / 3))]]
+
+    # test
+    testX = X[idx[(2 * int(len(Y) / 3)):], :]
+    testY = Y[idx[(2 * int(len(Y) / 3)):]]
+    print(sum(trainY))
+    if gen == 0:
+        # Return train, valid, and test sets
+        return trainX, trainY, testX, testY
+    else:
+        return np.concatenate((trainX, trainY.reshape(-1, 1)), axis=1)
+
 
